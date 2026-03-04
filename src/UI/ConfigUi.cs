@@ -213,13 +213,12 @@ namespace ActionEffectRange.UI
                         ImGui.PushStyleColor(ImGuiCol.Button, 0xFF000000 | 0x005E5BFF);
                         ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0xDD000000 | 0x005E5BFF);
                         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | 0x005E5BFF);
-                        if (ImGuiExt.Button("Buy Yomishino a Coffee", 
-                            "You can support me and buy me a coffee if you want.\n" +
-                            "(Will open external link to Ko-fi in your browser)"))
+                        if (ImGuiExt.Button("Open Plugin Repository", 
+                            "Open the GitHub repository for this fork in your browser."))
                         {
                             Process.Start(new ProcessStartInfo
                             {
-                                FileName = "https://ko-fi.com/yomishino",
+                                FileName = "https://github.com/ShiftyKiwi/FFXIVActionEffectRange",
                                 UseShellExecute = true
                             });
                         }

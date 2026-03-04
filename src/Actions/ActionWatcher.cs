@@ -2,13 +2,20 @@
 using ActionEffectRange.Actions.EffectRange;
 using ActionEffectRange.Drawing;
 using ActionEffectRange.Helpers;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Game.ClientState.Statuses;
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
+using Lumina.Excel;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using StatusSheet = Lumina.Excel.Sheets.Status;
 using Vector3Struct = FFXIVClientStructs.FFXIV.Common.Math.Vector3;
 
 namespace ActionEffectRange.Actions
@@ -16,9 +23,16 @@ namespace ActionEffectRange.Actions
     internal static class ActionWatcher
     {
         private const float SeqExpiry = 2.5f; // this is arbitrary...
+        private const uint CuringWaltz = 16015;
+        private const uint CuringWaltzPvP = 29429;
+        private const uint HollowNozuchi = 25776;
+        private const uint ArcaneCrest = 24404;
 
         private static uint lastSendActionSeq = 0;
         private static uint lastReceivedMainSeq = 0;
+        private static bool hadArcaneCrestProcStatus = false;
+        private static ImmutableHashSet<uint> dancePartnerStatusIds = ImmutableHashSet<uint>.Empty;
+        private static ImmutableHashSet<uint> arcaneCrestProcStatusIds = ImmutableHashSet<uint>.Empty;
 
         private static readonly ActionSeqRecord playerActionSeqs = new(5);
         private static readonly HashSet<ushort> skippedSeqs = new();
@@ -316,7 +330,8 @@ namespace ActionEffectRange.Actions
 
                 if (casterEntityId != LocalPlayer!.EntityId
                     && (!PetWatcher.HasPetPresent 
-                        || PetWatcher.GetPetEntityId() != casterEntityId))
+                        || PetWatcher.GetPetEntityId() != casterEntityId)
+                    && !TryGetKnownOwnedSourceObject(casterEntityId, header->ActionId, out _))
                 {
                     LogUserDebug($"---Skip: Effect triggered by others");
                     return;
@@ -374,6 +389,9 @@ namespace ActionEffectRange.Actions
                         EffectRangeDrawing.AddEffectRangeToDraw(seqInfo.Seq,
                             DrawTrigger.Used, erdata, seqInfo.SeqSnapshot.PlayerPosition,
                             trgtPos, seqInfo.SeqSnapshot.PlayerRotation);
+                        TryDrawCuringWaltzPartnerRange(header->ActionId, seqInfo.Seq,
+                            erdata, seqInfo.SeqSnapshot.PlayerPosition,
+                            seqInfo.SeqSnapshot.PlayerRotation);
                     }
                     else if (drawForAuto)
                     {
@@ -399,6 +417,8 @@ namespace ActionEffectRange.Actions
                                 EffectRangeDrawing.AddEffectRangeToDraw(mainSeq,
                                     DrawTrigger.Used, erdata, LocalPlayer!.Position,
                                     target.Position, LocalPlayer!.Rotation);
+                                TryDrawCuringWaltzPartnerRange(header->ActionId, mainSeq,
+                                    erdata, LocalPlayer.Position, LocalPlayer.Rotation);
                             }
                             else LogUserDebug($"---Failed: Target #{header->AnimationTargetId.Id:X} not found");
                         }
@@ -479,6 +499,14 @@ namespace ActionEffectRange.Actions
                             }
                             else LogUserDebug($"---Failed: Target #{header->AnimationTargetId:X} not found");
                         }
+                    }
+                    else if (TryGetKnownOwnedSourceObject(casterEntityId, header->ActionId, out var source))
+                    {
+                        LogUserDebug($"---Add DrawData for action #{header->ActionId} " +
+                            $"from owned helper object #{casterEntityId:X}, using source position");
+                        EffectRangeDrawing.AddEffectRangeToDraw(mainSeq,
+                            DrawTrigger.Used, erdata, source.Position,
+                            source.Position, source.Rotation);
                     }
                     else LogUserDebug($"---Skip: source actor #{casterEntityId:X} not matching pc or pet");
                 }
@@ -612,10 +640,157 @@ namespace ActionEffectRange.Actions
             => info.ElapsedSeconds > SeqExpiry;
 
         private static void OnClassJobChangedClearCache(uint classJobId)
-            => ClearSeqRecordCache();
+        {
+            ClearSeqRecordCache();
+            hadArcaneCrestProcStatus = false;
+        }
 
         private static void OnTerritoryChangedClearCache(ushort terr)
-            => ClearSeqRecordCache();
+        {
+            ClearSeqRecordCache();
+            hadArcaneCrestProcStatus = false;
+        }
+
+        private static void OnFrameworkUpdate(IFramework framework)
+        {
+            var hasArcaneCrestProc = HasArcaneCrestProcStatus();
+            if (Enabled && IsPlayerLoaded && hasArcaneCrestProc && !hadArcaneCrestProcStatus)
+            {
+                LogUserDebug("FrameworkUpdate => Arcane Crest proc detected");
+                TryDrawAutoTriggeredSelfRange(ArcaneCrest);
+            }
+
+            hadArcaneCrestProcStatus = hasArcaneCrestProc;
+        }
+
+        private static void EnsureSpecialStatusIds()
+        {
+            if (!dancePartnerStatusIds.IsEmpty && !arcaneCrestProcStatusIds.IsEmpty)
+                return;
+
+            var statusSheet = DataManager.GetExcelSheet<StatusSheet>();
+            if (statusSheet == null)
+                return;
+
+            if (dancePartnerStatusIds.IsEmpty)
+                dancePartnerStatusIds = ResolveStatusIds(statusSheet,
+                    "Closed Position", "Dance Partner");
+
+            if (arcaneCrestProcStatusIds.IsEmpty)
+                arcaneCrestProcStatusIds = ResolveStatusIds(statusSheet,
+                    "Crest of Time Returned");
+        }
+
+        private static ImmutableHashSet<uint> ResolveStatusIds(
+            ExcelSheet<StatusSheet> statusSheet, params string[] names)
+            => statusSheet
+                .Where(row => names.Contains(row.Name.ToString(), StringComparer.OrdinalIgnoreCase))
+                .Select(row => row.RowId)
+                .ToImmutableHashSet();
+
+        private static bool TryDrawAutoTriggeredSelfRange(uint actionId)
+        {
+            var erdata = EffectRangeDataManager.NewData(actionId);
+            if (erdata == null)
+            {
+                PluginLog.Error($"Cannot get data for action#{actionId}");
+                return false;
+            }
+
+            if (!ShouldDrawForActionCategory(erdata.Category, true))
+                return false;
+
+            erdata = EffectRangeDataManager.CustomiseEffectRangeData(erdata);
+            if (!CheckShouldDrawPostCustomisation(erdata))
+                return false;
+
+            EffectRangeDrawing.AddEffectRangeToDraw(0,
+                DrawTrigger.Used, erdata, LocalPlayer!.Position,
+                LocalPlayer.Position, LocalPlayer.Rotation);
+            return true;
+        }
+
+        private static bool TryDrawCuringWaltzPartnerRange(
+            uint actionId, uint sequence, EffectRangeData erdata,
+            Vector3 playerPosition, float playerRotation)
+        {
+            if (actionId != CuringWaltz && actionId != CuringWaltzPvP)
+                return false;
+
+            if (!TryGetDancePartner(out var partner))
+                return false;
+
+            LogUserDebug($"---Adding partner DrawData for action #{actionId} around #{partner!.GameObjectId:X}");
+            EffectRangeDrawing.AddEffectRangeToDraw(sequence,
+                DrawTrigger.Used, erdata, playerPosition,
+                partner.Position, playerRotation);
+            return true;
+        }
+
+        private static bool TryGetDancePartner(out IPlayerCharacter? partner)
+        {
+            partner = null;
+            EnsureSpecialStatusIds();
+            if (dancePartnerStatusIds.IsEmpty || LocalPlayer == null)
+                return false;
+
+            foreach (var obj in ObejctTable)
+            {
+                if (obj is not IPlayerCharacter player
+                    || player.GameObjectId == LocalPlayer.GameObjectId)
+                    continue;
+
+                if (!player.StatusList.Any(IsDancePartnerStatusFromLocalPlayer))
+                    continue;
+
+                partner = player;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsDancePartnerStatusFromLocalPlayer(IStatus status)
+            => status.StatusId != 0
+                && dancePartnerStatusIds.Contains(status.StatusId)
+                && IsLocalPlayerSource(status);
+
+        private static bool HasArcaneCrestProcStatus()
+        {
+            EnsureSpecialStatusIds();
+            if (arcaneCrestProcStatusIds.IsEmpty || LocalPlayer == null)
+                return false;
+
+            return LocalPlayer.StatusList.Any(status =>
+                status.StatusId != 0
+                && arcaneCrestProcStatusIds.Contains(status.StatusId)
+                && IsLocalPlayerSource(status));
+        }
+
+        private static bool IsLocalPlayerSource(IStatus status)
+            => LocalPlayer != null
+                && (status.SourceId == LocalPlayer.GameObjectId
+                    || status.SourceId == LocalPlayer.EntityId
+                    || status.SourceObject?.GameObjectId == LocalPlayer.GameObjectId);
+
+        private static bool TryGetKnownOwnedSourceObject(
+            uint casterEntityId, uint actionId, out IGameObject sourceObject)
+        {
+            sourceObject = null!;
+            if (actionId != HollowNozuchi || LocalPlayer == null)
+                return false;
+
+            var source = ObejctTable.SearchById(casterEntityId);
+            if (source == null)
+                return false;
+
+            if (source.OwnerId != LocalPlayer.GameObjectId
+                && source.OwnerId != LocalPlayer.EntityId)
+                return false;
+
+            sourceObject = source;
+            return true;
+        }
 
 
         static unsafe ActionWatcher()
@@ -645,6 +820,7 @@ namespace ActionEffectRange.Actions
             UseActionLocationHook?.Enable();
             SendActionHook?.Enable();
             ReceiveActionEffectHook?.Enable();
+            Framework.Update += OnFrameworkUpdate;
 
             ClientState.TerritoryChanged += OnTerritoryChangedClearCache;
             ClassJobWatcher.ClassJobChanged += OnClassJobChangedClearCache;
@@ -656,6 +832,7 @@ namespace ActionEffectRange.Actions
             UseActionLocationHook?.Disable();
             SendActionHook?.Disable();
             ReceiveActionEffectHook?.Disable();
+            Framework.Update -= OnFrameworkUpdate;
 
             ClientState.TerritoryChanged -= OnTerritoryChangedClearCache;
             ClassJobWatcher.ClassJobChanged -= OnClassJobChangedClearCache;

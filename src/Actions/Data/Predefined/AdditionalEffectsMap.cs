@@ -11,10 +11,12 @@ namespace ActionEffectRange.Actions.Data.Predefined
             {
                 // PvE
 
+                new(16015, new uint[]{ 16015 }.ToImmutableArray()), // Curing Waltz (DNC)
                 new(24318, new uint[]{ 27524 }.ToImmutableArray()), // Pneuma (SGE)
 
                 // PvP
 
+                new(29429, new uint[]{ 29429 }.ToImmutableArray()), // Curing Waltz (DNC PvP)
                 new(29260, new uint[]{ 29706 }.ToImmutableArray()), // Pneuma (SGE PvP)
 
             }.ToImmutableDictionary();
