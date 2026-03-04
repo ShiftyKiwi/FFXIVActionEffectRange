@@ -3,10 +3,10 @@
     internal class Game
     {
         public static bool IsPlayerLoaded 
-            => ClientState.LocalContentId != 0 && ClientState.LocalPlayer != null;
+            => PlayerState.IsLoaded && ObejctTable.LocalPlayer != null;
 
         public static Dalamud.Game.ClientState.Objects.SubKinds.IPlayerCharacter?
-            LocalPlayer => ClientState.LocalPlayer;
+            LocalPlayer => ObejctTable.LocalPlayer;
 
         public static bool IsPvPZone
             => ClientState.TerritoryType > 0 && (DataManager.GetExcelSheet<Lumina.Excel.Sheets.TerritoryType>()?

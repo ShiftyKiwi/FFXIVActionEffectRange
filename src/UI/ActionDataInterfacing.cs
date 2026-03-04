@@ -9,9 +9,9 @@ namespace ActionEffectRange.UI
 {
     public static class ActionDataInterfacing
     {
-        public static IEnumerable<Lumina.Excel.Sheets.Action> GetAllPartialMatchActionExcelRows(string input, bool alsoMatchId, int maxCount, bool playerCombatActionOnly, Func<Lumina.Excel.Sheets.Action, bool> filter)
+        public static IEnumerable<Lumina.Excel.Sheets.Action> GetAllPartialMatchActionExcelRows(string input, bool alsoMatchId, int maxCount, bool playerCombatActionOnly, Func<Lumina.Excel.Sheets.Action, bool>? filter)
             => ActionData.ActionExcelSheet?
-                .Where(row => (row.Name.ToString().Contains(input, StringComparison.CurrentCultureIgnoreCase) || alsoMatchId && row.RowId.ToString().Contains(input)) && (!playerCombatActionOnly || ActionData.IsPlayerCombatAction(row)) && filter(row))
+                .Where(row => (row.Name.ToString().Contains(input, StringComparison.CurrentCultureIgnoreCase) || alsoMatchId && row.RowId.ToString().Contains(input)) && (!playerCombatActionOnly || ActionData.IsPlayerCombatAction(row)) && (filter?.Invoke(row) ?? true))
                 .Take(maxCount) ?? [];
 
         public static string GetActionDescription(Lumina.Excel.Sheets.Action row)

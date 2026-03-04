@@ -27,7 +27,7 @@ namespace ActionEffectRange.Helpers
 
         private static void OnFrameworkUpdate(IFramework framework)
         {
-            if (ClientState.LocalContentId == 0) return;
+            if (!PlayerState.IsLoaded) return;
             if (LocalPlayer == null) return;
             CheckClassJobChange(CurrentClassJobId);
         }

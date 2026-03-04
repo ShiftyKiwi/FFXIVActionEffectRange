@@ -12,5 +12,5 @@
   ],
   "ImageUrls": "",
   "IconUrl": "",
-  "Changelog": "Update for FFXIV 7.45, Dalamud API 14, and fixes for Curing Waltz, Hollow Nozuchi, and Arcane Crest edge cases."
+  "Changelog": "Warning cleanup release after the FFXIV 7.45 and Dalamud API 14 update."
 }

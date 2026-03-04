@@ -45,7 +45,7 @@ namespace ActionEffectRange.Actions
         { }
 
         public SeqSnapshot(ushort seq)
-            : this(seq, ClientState.LocalPlayer?.TargetObjectId ?? 0, LocalPlayer?.Position ?? new())
+            : this(seq, LocalPlayer?.TargetObjectId ?? 0, LocalPlayer?.Position ?? new())
         { }
 
         public SeqSnapshot(ushort seq, ulong targetObjId, Vector3 targetPos,

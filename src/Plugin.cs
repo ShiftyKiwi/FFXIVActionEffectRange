@@ -34,6 +34,8 @@ namespace ActionEffectRange
         [PluginService]
         internal static IClientState ClientState { get; private set; } = null!;
         [PluginService]
+        internal static IPlayerState PlayerState { get; private set; } = null!;
+        [PluginService]
         internal static IObjectTable ObejctTable { get; private set; } = null!;
         [PluginService]
         internal static IBuddyList BuddyList { get; private set; } = null!;
@@ -84,6 +86,7 @@ namespace ActionEffectRange
             ICommandManager commandManager,
             IFramework framework,
             IClientState clientState,
+            IPlayerState playerState,
             IObjectTable objectTable,
             IDataManager dataManager,
             ISigScanner sigScanner,
@@ -97,6 +100,7 @@ namespace ActionEffectRange
             InteropProvider = gameInteropProvider;
             Framework = framework;
             ClientState = clientState;
+            PlayerState = playerState;
             ObejctTable = objectTable;
             BuddyList = buddyList;
             PluginLog = log;
