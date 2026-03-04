@@ -14,6 +14,7 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using System.Globalization;
 
 namespace ActionEffectRange
 {
@@ -123,11 +124,33 @@ namespace ActionEffectRange
         private static void InitializeCommands()
         {
             CommandManager.AddHandler(commandToggleConfig, 
-                new CommandInfo((_, _) => InConfig = !InConfig)
+                new CommandInfo(OnCommand)
             {
-                HelpMessage = "Toggle the Configuration Window of ActionEffectRange",
+                HelpMessage = "Toggle config, or use '/actioneffectrange dump <actionId>' to log derived action data.",
                 ShowInHelp = true
             });
+        }
+
+        private static void OnCommand(string command, string args)
+        {
+            var trimmedArgs = args.Trim();
+            if (string.IsNullOrEmpty(trimmedArgs))
+            {
+                InConfig = !InConfig;
+                return;
+            }
+
+            var segments = trimmedArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (segments.Length == 2
+                && segments[0].Equals("dump", StringComparison.OrdinalIgnoreCase)
+                && uint.TryParse(segments[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var actionId))
+            {
+                PluginLog.Information(EffectRangeDataManager.DescribeActionData(actionId));
+                return;
+            }
+
+            PluginLog.Information("Usage: /actioneffectrange");
+            PluginLog.Information("   or: /actioneffectrange dump <actionId>");
         }
 
         private static void OnOpenConfigUi()

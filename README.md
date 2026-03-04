@@ -14,19 +14,23 @@ Add [https://raw.githubusercontent.com/ShiftyKiwi/MyDalamudPlugins/main/pluginma
 
 Once added, look for the plugin "ActionEffectRange" in Plugin Installer's available plugins.
 
+For patch-day debugging or data verification, you can also use `/actioneffectrange dump <actionId>`.
+This prints the raw action-sheet values and the plugin's derived/customized effect-range data to the Dalamud log.
+
 
 ## Disclaimer
 
-1. Because the visuals are drawn on an overlay without any current context/knowledge about the in-game geographical features etc.,
-   it can sometimes look distorted or "hovered in the air" depending on the terrain and/or camera angle.
+1. This plugin draws its indicators as an overlay, not as native in-game ground effects.
+   Because of that, shapes can still look slightly offset, warped, or elevated on uneven terrain, stairs, steep slopes, and certain camera angles.
+   This can be reduced, but not eliminated completely, in a plugin of this type.
 
-2. Please expect errors in calculation.
-   There are minor ones due to network latency that are not possible to fix.
-   For other errors, please feel free to open issues to report them.
+2. The plugin uses live action events and local snapshots to estimate where and when an effect should be drawn.
+   Most cases can be made very accurate, but small timing differences from network latency, animation timing, and delayed secondary effects are still unavoidable.
+   If a skill is consistently wrong rather than slightly delayed, please report it as a bug.
 
-3. Some data (such as Cone AoE angles) are not found in the client (as far as I know).
-   For these, I have to find out by myself, but I am unable to guarantee when this could be done
-   after each game update when new actions or changes to existing actions are introduced.
+3. Some action properties are not exposed cleanly by the client data and still require maintained overrides or heuristics.
+   That mostly affects edge cases such as cone angles, unusual secondary effects, and newly changed skills after a patch.
+   These cases are fixable over time, but they are not always discoverable automatically on patch day.
 
 
 ## Known Issues

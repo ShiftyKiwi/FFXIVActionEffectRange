@@ -12,5 +12,5 @@
   ],
   "ImageUrls": "",
   "IconUrl": "",
-  "Changelog": "Warning cleanup release after the FFXIV 7.45 and Dalamud API 14 update."
+  "Changelog": "Added action-data dump tooling and clarified overlay limitations for easier patch-day maintenance."
 }

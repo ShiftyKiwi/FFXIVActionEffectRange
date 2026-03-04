@@ -1,6 +1,7 @@
-﻿using ActionEffectRange.Actions.Data;
+using ActionEffectRange.Actions.Data;
 using ActionEffectRange.Actions.EffectRange;
 using ActionEffectRange.Actions.Enums;
+using System.Text;
 using CornerCases = ActionEffectRange.Actions.Data.Predefined.EffectRangeCornerCases;
 
 namespace ActionEffectRange.Actions
@@ -21,9 +22,42 @@ namespace ActionEffectRange.Actions
                 actionRow.Range, actionRow.EffectRange, actionRow.XAxisModifier,
                 actionRow.CastType, isOriginal: true);
 
+        public static string DescribeActionData(uint actionId)
+        {
+            var row = ActionData.GetActionExcelRow(actionId);
+            if (row == null)
+                return $"Action#{actionId}: no action-sheet row found.";
+
+            var actionRow = row.Value;
+            var rawData = NewData(actionRow);
+            var customisedData = CustomiseEffectRangeData(rawData);
+            var builder = new StringBuilder();
+
+            builder.AppendLine($"Action#{actionRow.RowId}: {actionRow.Name}");
+            builder.AppendLine(
+                $"Category={ActionData.GetActionCategoryName((ActionCategory)actionRow.ActionCategory.RowId)} ({actionRow.ActionCategory.RowId}), " +
+                $"CastType={actionRow.CastType}, TargetArea={actionRow.TargetArea}, Range={actionRow.Range}, " +
+                $"EffectRange={actionRow.EffectRange}, XAxisModifier={actionRow.XAxisModifier}");
+            builder.AppendLine(
+                $"ClassJobCategory={actionRow.ClassJobCategory.RowId}, IsPvP={actionRow.IsPvP}, " +
+                $"PlayerTriggered={ActionData.IsPlayerTriggeredAction(actionRow)}, " +
+                $"PlayerCombat={ActionData.IsPlayerCombatAction(actionRow)}, " +
+                $"Harmfulness={ActionData.GetActionHarmfulness(actionRow)}");
+            builder.AppendLine($"RawData={rawData}");
+            builder.AppendLine($"CustomisedData={customisedData}");
+
+            if (ActionData.TryGetActionWithAdditionalEffects(actionId, out var additionalEffects))
+                builder.AppendLine($"AdditionalEffects=[{string.Join(", ", additionalEffects)}]");
+
+            if (ActionData.ShouldNotUseCachedSeq(actionId))
+                builder.AppendLine("UsesCurrentPosition=true");
+
+            return builder.ToString().TrimEnd();
+        }
+
         public static EffectRangeData NewDataChangeHarmfulness(
             EffectRangeData original, ActionHarmfulness harmfulness)
-            => EffectRangeData.Create(original.ActionId, (uint)original.Category, 
+            => EffectRangeData.Create(original.ActionId, (uint)original.Category,
                 original.IsGTAction, harmfulness, original.Range, original.EffectRange,
                 original.XAxisModifier, original.CastType, isOriginal: false);
 
