@@ -10,7 +10,7 @@ such as where has the action landed and how large an area it covered.
 
 [XIVLauncher](https://github.com/goatcorp/FFXIVQuickLauncher) is required to install and run the plugin.
 
-Add [https://raw.githubusercontent.com/ShiftyKiwi/MyDalamudPlugins/main/pluginmaster.json](https://raw.githubusercontent.com/ShiftyKiwi/MyDalamudPlugins/main/pluginmaster.json) to Dalamud's Custom Plugin Repositories.
+Add [https://raw.githubusercontent.com/ShiftyKiwi/FFXIVActionEffectRange/main/pluginmaster.json](https://raw.githubusercontent.com/ShiftyKiwi/FFXIVActionEffectRange/main/pluginmaster.json) to Dalamud's Custom Plugin Repositories.
 
 Once added, look for the plugin "ActionEffectRange" in Plugin Installer's available plugins.
 

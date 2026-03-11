@@ -2,11 +2,11 @@
   "Author": "ShiftyKiwi",
   "Name": "ActionEffectRange",
   "InternalName": "ActionEffectRange",
-  "AssemblyVersion": "2.0.1.8",
+  "AssemblyVersion": "2.0.1.9",
   "Description": "This plugin provides a visual cue on the effect range of the AoE action you just used.\n\nMay be used as a supplement/replacement to the actions' VFXs in showing effect range related information, such as where has the action landed and how large an area it covered.",
   "ApplicableVersion": "any",
   "RepoUrl": "https://github.com/ShiftyKiwi/FFXIVActionEffectRange",
-  "Tags": [
+  "CategoryTags": [
     "UI"
   ],
   "DalamudApiLevel": 14,
@@ -16,6 +16,6 @@
   "LoadPriority": 0,
   "IconUrl": "",
   "Punchline": "Provides a visual cue on the effect range of the AoE action just used.",
-  "Changelog": "Added action-data dump tooling and clarified overlay limitations for easier patch-day maintenance.",
+  "Changelog": "Validated for FFXIV Patch 7.45 HotFixes on March 11, 2026.",
   "AcceptsFeedback": true
 }
