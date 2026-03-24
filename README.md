@@ -37,3 +37,8 @@ This prints the raw action-sheet values and the plugin's derived/customized effe
 
 - Overlay rendering does not account for terrain or collision, so circles and lines can still appear visually offset on uneven ground.
 - Some action data remains heuristic-driven, especially on brand-new skills or unusual PvP actions after major patches.
+
+
+Validated for FFXIV Patch 7.45 HotFix Patch 2 on March 24, 2026.
+
+
